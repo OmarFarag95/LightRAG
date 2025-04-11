@@ -30,6 +30,7 @@ STORAGE_IMPLEMENTATIONS = {
             "FaissVectorDBStorage",
             "QdrantVectorDBStorage",
             "MongoVectorDBStorage",
+            "Neo4jVectorDBStorage",
             # "TiDBVectorDBStorage",
         ],
         "required_methods": ["query", "upsert"],
@@ -81,6 +82,11 @@ STORAGE_ENV_REQUIREMENTS: dict[str, list[str]] = {
     "JsonDocStatusStorage": [],
     "PGDocStatusStorage": ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DATABASE"],
     "MongoDocStatusStorage": [],
+    "Neo4jVectorDBStorage": [
+        "NEO4J_URI",
+        "NEO4J_USERNAME",
+        "NEO4J_PASSWORD",
+    ],
 }
 
 # Storage implementation module mapping
@@ -108,6 +114,7 @@ STORAGES = {
     "PGDocStatusStorage": ".kg.postgres_impl",
     "FaissVectorDBStorage": ".kg.faiss_impl",
     "QdrantVectorDBStorage": ".kg.qdrant_impl",
+    "Neo4jVectorDBStorage": ".kg.neo4j_vector_db",
 }
 
 
