@@ -74,15 +74,50 @@ def main():
     with open(r"C:\Users\omarhamed\Desktop\test_workspace\AI\src\graphrag\sample_data.json", "r", encoding="utf-8") as f:
         sample_data = json.load(f)
     
-    for data in sample_data[:1]:
+    for data in sample_data[:5]:
         query = data["question"]
         # join list with comma
         answer = data["answers"][:1]
         answer = '\\n'.join(answer)
         rag.insert(query)
         rag.insert(answer)
-        exit()
         
+
+    
+    query = "ازاي اروح مول العرب من شبرا؟"
+
+    print("Performing naive search...")
+    # Perform naive search
+    results = rag.query(query, param=QueryParam(mode="naive"))
+    # write results to file
+    with open("results_naive.txt", "w", encoding="utf-8") as f:
+        f.write(results)
+    print("Results written to results_naive.txt")
+
+    # Perform local search
+    print("Performing local search...")
+    results = rag.query(query, param=QueryParam(mode="local"))
+    # write results to file
+    with open("results_local.txt", "w", encoding="utf-8") as f:
+        f.write(results)
+    print("Results written to results_local.txt")
+
+    # Perform global search
+    print("Performing global search...")
+    results = rag.query(query, param=QueryParam(mode="global"))
+    # write results to file
+    with open("results_global.txt", "w", encoding="utf-8") as f:
+        f.write(results)
+    print("Results written to results_global.txt")
+
+    # Perform hybrid search
+    print("Performing hybrid search...")
+    results = rag.query(query, param=QueryParam(mode="hybrid"))
+    # write results to file
+    with open("results_hybrid.txt", "w", encoding="utf-8") as f:
+        f.write(results)
+    print("Results written to results_hybrid.txt")
+  
 
 
     
