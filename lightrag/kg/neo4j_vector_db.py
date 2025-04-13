@@ -31,6 +31,10 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
                 "cosine_better_than_threshold must be specified in vector_db_storage_cls_kwargs"
             )
         self.cosine_better_than_threshold = cosine_threshold
+        self._neo4j_database = os.environ.get(
+            "NEO4J_DATABASE",
+            config.get("Chunk-entity-relation", "database", fallback=None),
+        )
 
         # Initialize Neo4j client
         self._client = GraphDatabase.driver(
@@ -53,9 +57,27 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
         MERGE (n:Vector {id: $id})
         SET n.vector = $vector, n.payload = $payload
         """
+        query_match_entity = """
+        MATCH (e:base {entity_id: $entity_name})
+        MERGE (v:Vector {id: $id})
+        SET v.vector = $vector, v.payload = $payload
+        MERGE (v)-[:EMBEDDING_OF]->(e)
+        """
         import json
 
         payload_json = json.dumps(payload)
+
+        import json
+
+        payload_json = json.dumps(payload)
+
+        if "entity_name" in payload:
+            return query_match_entity, {
+                "id": id,
+                "vector": vector,
+                "payload": payload_json,
+                "entity_name": payload["entity_name"],
+            }
 
         params = {"id": id, "vector": vector, "payload": payload_json}
         return query, params
@@ -97,7 +119,7 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
         logger.info(f"Successfully upserted {len(list_data)} vectors into Neo4j")
 
     def _insert_into_neo4j(self, list_data, embeddings):
-        with self._client.session() as session:
+        with self._client.session(database=self._neo4j_database) as session:
             for i, d in enumerate(list_data):
                 node_id = compute_mdhash_id(d["id"])
                 query, params = self._create_node_query(
@@ -113,7 +135,7 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
         embedding = await self.embedding_func([query])
 
         # Retrieve the top K most similar vectors from Neo4j
-        with self._client.session() as session:
+        with self._client.session(database=self._neo4j_database) as session:
             cypher_query = """
             MATCH (n:Vector)
             WHERE n.vector IS NOT NULL
@@ -159,7 +181,7 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
             logger.debug(
                 f"Attempting to delete entity {entity_name} with ID {entity_id}"
             )
-            with self._client.session() as session:
+            with self._client.session(database=self._neo4j_database) as session:
                 cypher_query = f"""
                 MATCH (n:Vector {{id: '{entity_id}'}})
                 DELETE n
@@ -172,7 +194,7 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
     async def delete_entity_relation(self, entity_name: str) -> None:
         """Delete all relations associated with an entity."""
         try:
-            with self._client.session() as session:
+            with self._client.session(database=self._neo4j_database) as session:
                 cypher_query = f"""
                 MATCH (src:Vector)-[r]->(tgt:Vector)
                 WHERE src.id = '{entity_name}' OR tgt.id = '{entity_name}'
@@ -189,7 +211,7 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
             return []
 
         try:
-            with self._client.session() as session:
+            with self._client.session(database=self._neo4j_database) as session:
                 cypher_query = f"""
                 MATCH (n:Vector)
                 WHERE n.id IN {ids}
@@ -208,7 +230,7 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
     async def get_by_id(self, id: str) -> dict[str, Any] | None:
         """Get vector data by its ID."""
         try:
-            with self._client.session() as session:
+            with self._client.session(database=self._neo4j_database) as session:
                 cypher_query = f"""
                 MATCH (n:Vector)
                 WHERE n.id = '{id}'
@@ -230,7 +252,7 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
     async def delete(self, ids: List[str]) -> None:
         """Delete vectors with specified IDs."""
         try:
-            with self._client.session() as session:
+            with self._client.session(database=self._neo4j_database) as session:
                 cypher_query = f"""
                 MATCH (n:Vector)
                 WHERE n.id IN {ids}
@@ -245,7 +267,7 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
         """Drop all vector data from storage and clean up resources."""
         try:
             # Drop all vectors from the collection
-            with self._client.session() as session:
+            with self._client.session(database=self._neo4j_database) as session:
                 cypher_query = "MATCH (n:Vector) DELETE n"
                 session.run(cypher_query)
 
