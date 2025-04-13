@@ -165,6 +165,8 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
                     "source_id": payload.get("source_id"),
                     "file_path": payload.get("file_path"),
                     "full_doc_id": payload.get("full_doc_id"),
+                    "src_id": payload.get("src_id"),
+                    "tgt_id": payload.get("tgt_id"),
                 }
 
                 # Include the similarity score in the record data
@@ -173,6 +175,8 @@ class Neo4jVectorDBStorage(BaseVectorStorage):
                 # Append the processed record to the result list
                 if record_data["entity_name"]:
                     result_list.append(record_data)
+
+            return result_list
 
     async def delete_entity(self, entity_name: str) -> None:
         """Delete an entity by name."""
