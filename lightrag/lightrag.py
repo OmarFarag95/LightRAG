@@ -935,14 +935,14 @@ class LightRAG:
                         text_chunks_task = asyncio.create_task(
                             self.text_chunks.upsert(chunks)
                         )
-                        tasks = [
+                        # First build KG then insert vector chunks & doc info
+                        await entity_relation_task
+                        await asyncio.gather(
                             doc_status_task,
                             chunks_vdb_task,
-                            entity_relation_task,
                             full_docs_task,
                             text_chunks_task,
-                        ]
-                        await asyncio.gather(*tasks)
+                        )
                         await self.doc_status.upsert(
                             {
                                 doc_id: {
